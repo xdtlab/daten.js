@@ -17,7 +17,7 @@
 
 		<BigInteger>
 */
-(function(exports) {
+module.exports = (function() {
 "use strict";
 /*
 	Class: BigInteger
@@ -1616,5 +1616,5 @@ BigInteger.MAX_EXP = MAX_EXP;
 	})();
 })();
 
-exports.BigInteger = BigInteger;
-})(typeof exports !== 'undefined' ? exports : this);
+return BigInteger;
+})();
