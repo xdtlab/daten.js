@@ -2,6 +2,7 @@ module.exports = (function() {
   'use strict';
 
   var daten = require('./daten');
+  var BigInteger = require('./crypto/biginteger');
 
   var encoder = new TextEncoder("utf-8");
   var decoder = new TextDecoder('utf-8');
@@ -12,6 +13,32 @@ module.exports = (function() {
 
   function decodeUtf8(uint8arr) {
     return decoder.decode(uint8arr);
+  }
+
+  var alphabet = '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz'
+  function hexToBase58(hex) {
+    var num = new BigInteger("0x" + hex);
+    var encoded = '';
+    while(num.isPositive()) {
+      var divrem = num.divRem(58);
+      num = divrem[0];
+      encoded = alphabet[divrem[1]].toString() + encoded;
+    }
+    return encoded || '1';
+  }
+  function base58ToHex(base58) {
+    var decoded = new BigInteger(0);
+    while(base58) {
+      var alphabetPosition = alphabet.indexOf(base58[0]);
+      if (alphabetPosition < 0)
+        throw "String is not Base58!";
+      var powerOf = base58.length - 1;
+      var toadd = new BigInteger(alphabetPosition);
+      toadd = toadd.multiply((new BigInteger(58)).pow(powerOf));
+      decoded = decoded.add(toadd);
+      base58 = base58.substring(1);
+    }
+    return decoded.toString(16);
   }
 
   function encodeAscii(string) {
@@ -112,5 +139,6 @@ module.exports = (function() {
           bytesToUint8: bytesToUint8, bytesToUint16: bytesToUint16, bytesToUint32: bytesToUint32, bytesToUint64: bytesToUint64,
           uint8ToBytes: uint8ToBytes, uint16ToBytes: uint16ToBytes, uint32ToBytes: uint32ToBytes, uint64ToBytes: uint64ToBytes,
           mergeBytes: mergeBytes,
+          hexToBase58, base58ToHex,
           ByteReader: ByteReader, ByteWriter: ByteWriter};
 })();
