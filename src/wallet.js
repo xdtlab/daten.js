@@ -23,17 +23,31 @@ module.exports = (function() {
   }
 
   Wallet.prototype.getBalance = function(onBalanceReady) {
-    $.get(this.url + "/resolve?address=" + this.address, function(data, status) {
-      if(onBalanceReady && data.hasOwnProperty('balance'))
-        onBalanceReady(data.balance);
-    });
+    var xhr = new XMLHttpRequest();
+    xhr.open('GET', this.url + "/resolve?address=" + this.address);
+    xhr.onload = function() {
+      if (xhr.status === 200) {
+        var data = JSON.parse(xhr.responseText);
+        if(onBalanceReady && data.hasOwnProperty('balance'))
+          onBalanceReady(data.balance);
+      }
+      else { /* TODO: Do something?! */ }
+    };
+    xhr.send();
   }
 
   Wallet.prototype.getStatus = function(onStatusReady) {
-    $.get(this.url + "/status", function(data, status) {
-      if(onStatusReady && data.hasOwnProperty('height') && data.hasOwnProperty('time') && data.hasOwnProperty('bytePrice'))
-        onStatusReady(data.height, data.time, data.bytePrice);
-    });
+    var xhr = new XMLHttpRequest();
+    xhr.open('GET', this.url + "/status");
+    xhr.onload = function() {
+      if (xhr.status === 200) {
+        var data = JSON.parse(xhr.responseText);
+        if(onStatusReady && data.hasOwnProperty('height') && data.hasOwnProperty('time') && data.hasOwnProperty('bytePrice'))
+          onStatusReady(data.height, data.time, data.bytePrice);
+      }
+      else { /* TODO: Do something?! */ }
+    };
+    xhr.send();
   }
 
   Wallet.prototype.getBlock = function(index, header_only, onBlockReady, onError) {
@@ -74,15 +88,17 @@ module.exports = (function() {
       tx.fee = tx.serialize().length * bytePrice;
       wallet.signTransaction(tx);
 
-      $.ajax({
-         url: wallet.url + '/transactions',
-         type: 'POST',
-         data: tx.serialize(),
-         processData: false
-      }).done(function(data) {
-        if(onSent)
-          onSent(data);
-      });
+      var xhr = new XMLHttpRequest();
+      xhr.open('POST', wallet.url + '/transactions');
+      xhr.onload = function() {
+        if (xhr.status === 200) {
+          var data = JSON.parse(xhr.responseText);
+          if(onSent)
+            onSent(data);
+        }
+        else { /* TODO: Do something?! */ }
+      };
+      xhr.send(tx.serialize());
     });
   }
 
@@ -104,10 +120,17 @@ module.exports = (function() {
   }
 
   Wallet.prototype.getPeers = function(onPeersReady) {
-    $.get(this.url + "/peers", function(data, status) {
-      if(data.ok)
-        if(onPeersReady) onPeersReady(data.peers);
-    });
+    var xhr = new XMLHttpRequest();
+    xhr.open('GET', this.url + "/peers");
+    xhr.onload = function() {
+      if (xhr.status === 200) {
+        var data = JSON.parse(xhr.responseText);
+        if(data.ok)
+          if(onPeersReady) onPeersReady(data.peers);
+      }
+      else { /* TODO: Do something?! */ }
+    };
+    xhr.send();
   }
 
   Wallet.runMerklePath = function(hash, path) {
@@ -142,24 +165,31 @@ module.exports = (function() {
       } else onResult(confirmations, tries);
     }
 
-    $.get(this.url + "/confirm?target=" + transaction.target + "&hash=" + transaction.hash(), function(data, status) {
-      if(!data.ok)
-        onResult(0, 0);
-      else {
-        wallet.getStatus(function(height, timestamp, bytePrice) {
-          if(maxConfirmations > height - transaction.target)
-            maxConfirmations = height - transaction.target;
-          wallet.getBlock(transaction.target, true, function(b) {
-            if(Wallet.runMerklePath(transaction.hash(), data.path) == daten.utils.bytesToHex(b.merkleRoot)) {
-              var hash = b.hash();
-              if(b.validDifficulty(hash))
-                checkDiffs(transaction.target + 1, hash, 1, b.averageTriesNeeded(), maxConfirmations);
-              else onResult(0, 0);
-            }
+    var xhr = new XMLHttpRequest();
+    xhr.open('GET', this.url + "/confirm?target=" + transaction.target + "&hash=" + transaction.hash());
+    xhr.onload = function() {
+      if (xhr.status === 200) {
+        var data = JSON.parse(xhr.responseText);
+        if(!data.ok)
+          onResult(0, 0);
+        else {
+          wallet.getStatus(function(height, timestamp, bytePrice) {
+            if(maxConfirmations > height - transaction.target)
+              maxConfirmations = height - transaction.target;
+            wallet.getBlock(transaction.target, true, function(b) {
+              if(Wallet.runMerklePath(transaction.hash(), data.path) == daten.utils.bytesToHex(b.merkleRoot)) {
+                var hash = b.hash();
+                if(b.validDifficulty(hash))
+                  checkDiffs(transaction.target + 1, hash, 1, b.averageTriesNeeded(), maxConfirmations);
+                else onResult(0, 0);
+              }
+            });
           });
-        });
+        }
       }
-    });
+      else { /* TODO: Do something?! */ }
+    };
+    xhr.send();
   }
 
   Wallet.prototype.listen = function(address, onTransaction, onOpen, onClose) {
