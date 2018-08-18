@@ -22,21 +22,22 @@ module.exports = (function() {
     return this.key;
   }
 
-  Wallet.prototype.getBalance = function(onBalanceReady) {
+  Wallet.prototype.getBalance = function(onBalanceReady, onError) {
     var xhr = new XMLHttpRequest();
     xhr.open('GET', this.url + "/resolve?address=" + this.address);
     xhr.onload = function() {
       if (xhr.status === 200) {
         var data = JSON.parse(xhr.responseText);
-        if(onBalanceReady && data.hasOwnProperty('balance'))
+        if(onBalanceReady)
           onBalanceReady(data.balance);
       }
-      else { /* TODO: Do something?! */ }
+      else { if(onError) onError(xhr.status); }
     };
+    xhr.onerror = function() { if(onError) onError(xhr.status); }
     xhr.send();
   }
 
-  Wallet.prototype.getStatus = function(onStatusReady) {
+  Wallet.prototype.getStatus = function(onStatusReady, onError) {
     var xhr = new XMLHttpRequest();
     xhr.open('GET', this.url + "/status");
     xhr.onload = function() {
@@ -45,8 +46,9 @@ module.exports = (function() {
         if(onStatusReady)
           onStatusReady(data);
       }
-      else { /* TODO: Do something?! */ }
+      else { if(onError) onError(xhr.status); }
     };
+    xhr.onerror = function() { if(onError) onError(xhr.status); }
     xhr.send();
   }
 
@@ -58,9 +60,10 @@ module.exports = (function() {
       var responseArray = new Uint8Array(this.response);
       if(responseArray.length > 0 && onBlockReady)
         onBlockReady(daten.Block.deserialize(responseArray, header_only));
-      else if(responseArray.length == 0 && onError)
-        onError();
+      else if(responseArray.length == 0)
+        if(onError) onError(xhr.status);
     };
+    xhr.onerror = function() { if(onError) onError(xhr.status); }
     xhr.send();
   }
 
@@ -81,7 +84,7 @@ module.exports = (function() {
     transaction.signature = daten.utils.hexToBytes(daten.ecdsa.sign(this.getKey(), signable));
   }
 
-  Wallet.prototype.sendTransaction = function(name, destination, amount, data, onSent) {
+  Wallet.prototype.sendTransaction = function(name, destination, amount, data, onResult, onError) {
     var wallet = this;
     this.getStatus(function(status) {
       var tx = new daten.Transaction(0, status.height + 1, 0, name, new daten.address.RawAddress(daten.utils.hexToBytes(wallet.getAddress())), destination, amount, data, new Uint8Array(71) /* Empty signature */);
@@ -93,16 +96,17 @@ module.exports = (function() {
       xhr.onload = function() {
         if (xhr.status === 200) {
           var data = JSON.parse(xhr.responseText);
-          if(onSent)
-            onSent(data);
+          if(onResult)
+            onResult(data);
         }
-        else { /* TODO: Do something?! */ }
+        else { if(onError) onError(xhr.status); }
       };
+      xhr.onerror = function() { if(onError) onError(xhr.status); }
       xhr.send(tx.serialize());
     });
   }
 
-  Wallet.prototype.query = function(filters, onQueryDone) {
+  Wallet.prototype.query = function(filters, onQueryDone, onError) {
     var xhr = new XMLHttpRequest();
     var url = this.url + "/query?";
     if(filters.name) url += 'name=' + filters.name + '&';
@@ -110,16 +114,19 @@ module.exports = (function() {
     xhr.open('GET', url, true);
     xhr.responseType = 'arraybuffer';
     xhr.onload = function(e) {
-      var responseArray = new Uint8Array(this.response);
-      if(onQueryDone) {
-        var transactions = daten.Transaction.deserializeList(responseArray);
-        onQueryDone(transactions);
-      }
+      if (xhr.status === 200) {
+        var responseArray = new Uint8Array(this.response);
+        if(onQueryDone) {
+          var transactions = daten.Transaction.deserializeList(responseArray);
+          onQueryDone(transactions);
+        }
+      } else { if(onError) onError(xhr.status); }
     };
+    xhr.onerror = function() { if(onError) onError(xhr.status); }
     xhr.send();
   }
 
-  Wallet.prototype.getPeers = function(onPeersReady) {
+  Wallet.prototype.getPeers = function(onPeersReady, onError) {
     var xhr = new XMLHttpRequest();
     xhr.open('GET', this.url + "/peers");
     xhr.onload = function() {
@@ -128,8 +135,9 @@ module.exports = (function() {
         if(data.ok)
           if(onPeersReady) onPeersReady(data.peers);
       }
-      else { /* TODO: Do something?! */ }
+      else { if(onError) onError(xhr.status); }
     };
+    xhr.onerror = function() { if(onError) onError(xhr.status); }
     xhr.send();
   }
 
@@ -148,7 +156,7 @@ module.exports = (function() {
     return hash;
   }
 
-  Wallet.prototype.confirm = function(transaction, maxConfirmations, onResult) {
+  Wallet.prototype.confirm = function(transaction, maxConfirmations, onResult, onError) {
     var wallet = this;
 
     function checkDiffs(index, previousHash, confirmations, tries, maxConfirmations) {
@@ -187,8 +195,9 @@ module.exports = (function() {
           });
         }
       }
-      else { /* TODO: Do something?! */ }
+      else { if(onError) onError(xhr.status); }
     };
+    xhr.onerror = function() { if(onError) onError(xhr.status); }
     xhr.send();
   }
 
