@@ -42,8 +42,8 @@ module.exports = (function() {
     xhr.onload = function() {
       if (xhr.status === 200) {
         var data = JSON.parse(xhr.responseText);
-        if(onStatusReady && data.hasOwnProperty('height') && data.hasOwnProperty('time') && data.hasOwnProperty('bytePrice'))
-          onStatusReady(data.height, data.time, data.bytePrice);
+        if(onStatusReady)
+          onStatusReady(data);
       }
       else { /* TODO: Do something?! */ }
     };
@@ -83,9 +83,9 @@ module.exports = (function() {
 
   Wallet.prototype.sendTransaction = function(name, destination, amount, data, onSent) {
     var wallet = this;
-    this.getStatus(function(height, time, bytePrice) {
-      var tx = new daten.Transaction(0, height + 1, 0, name, new daten.address.RawAddress(daten.utils.hexToBytes(wallet.getAddress())), destination, amount, data, new Uint8Array(71) /* Empty signature */);
-      tx.fee = tx.serialize().length * bytePrice;
+    this.getStatus(function(status) {
+      var tx = new daten.Transaction(0, status.height + 1, 0, name, new daten.address.RawAddress(daten.utils.hexToBytes(wallet.getAddress())), destination, amount, data, new Uint8Array(71) /* Empty signature */);
+      tx.fee = tx.serialize().length * status.bytePrice;
       wallet.signTransaction(tx);
 
       var xhr = new XMLHttpRequest();
@@ -173,9 +173,9 @@ module.exports = (function() {
         if(!data.ok)
           onResult(0, 0);
         else {
-          wallet.getStatus(function(height, timestamp, bytePrice) {
-            if(maxConfirmations > height - transaction.target)
-              maxConfirmations = height - transaction.target;
+          wallet.getStatus(function(status) {
+            if(maxConfirmations > status.height - transaction.target)
+              maxConfirmations = status.height - transaction.target;
             wallet.getBlock(transaction.target, true, function(b) {
               if(Wallet.runMerklePath(transaction.hash(), data.path) == daten.utils.bytesToHex(b.merkleRoot)) {
                 var hash = b.hash();
