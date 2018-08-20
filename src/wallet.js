@@ -10,8 +10,23 @@ module.exports = (function() {
       var acc = daten.ecdsa.generate();
     this.key = acc.key;
     this.address = acc.address;
-    this.node = node;
-    this.url = 'http://' + this.node;
+    this.nodes = new Set();
+    this.nodes.add(node);
+  }
+
+  Wallet.prototype.refreshNodes = function() {
+    var wallet = this;
+    new Set(this.nodes).forEach(function(node) {
+      Wallet.getPeers(node, function(peers) {
+        peers.forEach(function(peer) { wallet.nodes.add(peer); });
+      }, function() { wallet.nodes.delete(node); });
+    });
+  }
+
+  Wallet.prototype.randomNode = function() {
+    this.refreshNodes();
+    var nodes = Array.from(this.nodes);
+    return nodes[Math.floor(Math.random() * nodes.length)];
   }
 
   Wallet.prototype.getAddress = function() {
@@ -24,7 +39,7 @@ module.exports = (function() {
 
   Wallet.prototype.getBalance = function(onBalanceReady, onError) {
     var xhr = new XMLHttpRequest();
-    xhr.open('GET', this.url + "/resolve?address=" + this.address);
+    xhr.open('GET', "http://" + this.randomNode() + "/resolve?address=" + this.address);
     xhr.onload = function() {
       if (xhr.status === 200) {
         var data = JSON.parse(xhr.responseText);
@@ -39,7 +54,7 @@ module.exports = (function() {
 
   Wallet.prototype.getStatus = function(onStatusReady, onError) {
     var xhr = new XMLHttpRequest();
-    xhr.open('GET', this.url + "/status");
+    xhr.open('GET', "http://" + this.randomNode() + "/status");
     xhr.onload = function() {
       if (xhr.status === 200) {
         var data = JSON.parse(xhr.responseText);
@@ -54,7 +69,7 @@ module.exports = (function() {
 
   Wallet.prototype.getBlock = function(index, header_only, onBlockReady, onError) {
     var xhr = new XMLHttpRequest();
-    xhr.open('GET', this.url + '/blocks/' + index + (header_only ? "?header" : ""), true);
+    xhr.open('GET', "http://" + this.randomNode() + '/blocks/' + index + (header_only ? "?header" : ""), true);
     xhr.responseType = 'arraybuffer';
     xhr.onload = function(e) {
       var responseArray = new Uint8Array(this.response);
@@ -69,7 +84,7 @@ module.exports = (function() {
 
   Wallet.prototype.getBlockRange = function(start, end, header_only, onBlockRangeReady) {
     var xhr = new XMLHttpRequest();
-    xhr.open('GET', this.url + '/blocks/' + start + '/' + end + (header_only ? "?header" : ""), true);
+    xhr.open('GET', "http://" + this.randomNode() + '/blocks/' + start + '/' + end + (header_only ? "?header" : ""), true);
     xhr.responseType = 'arraybuffer';
     xhr.onload = function(e) {
       var reader = new daten.utils.ByteReader(this.response);
@@ -108,7 +123,7 @@ module.exports = (function() {
 
   Wallet.prototype.query = function(filters, onQueryDone, onError) {
     var xhr = new XMLHttpRequest();
-    var url = this.url + "/query?";
+    var url = "http://" + this.randomNode() + "/query?";
     if(filters.name) url += 'name=' + filters.name + '&';
     if(filters.destination) url += 'destination=' + filters.destination.toString();
     xhr.open('GET', url, true);
@@ -126,9 +141,9 @@ module.exports = (function() {
     xhr.send();
   }
 
-  Wallet.prototype.getPeers = function(onPeersReady, onError) {
+  Wallet.getPeers = function(node, onPeersReady, onError) {
     var xhr = new XMLHttpRequest();
-    xhr.open('GET', this.url + "/peers");
+    xhr.open('GET', "http://" + node + "/peers");
     xhr.onload = function() {
       if (xhr.status === 200) {
         var data = JSON.parse(xhr.responseText);
@@ -174,7 +189,7 @@ module.exports = (function() {
     }
 
     var xhr = new XMLHttpRequest();
-    xhr.open('GET', this.url + "/confirm?target=" + transaction.target + "&hash=" + transaction.hash());
+    xhr.open('GET', "http://" + this.randomNode() + "/confirm?target=" + transaction.target + "&hash=" + transaction.hash());
     xhr.onload = function() {
       if (xhr.status === 200) {
         var data = JSON.parse(xhr.responseText);
@@ -203,7 +218,7 @@ module.exports = (function() {
 
   Wallet.prototype.listen = function(address, onTransaction, onOpen, onClose) {
     if(this.socket) this.socket.close();
-    this.socket = new WebSocket("ws://" + this.node + '/live?address=' + address);
+    this.socket = new WebSocket("ws://" + this.randomNode() + '/live?address=' + address);
     this.socket.binaryType = "arraybuffer";
     var wallet = this;
     this.socket.onopen = onOpen;
