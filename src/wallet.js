@@ -107,7 +107,7 @@ module.exports = (function() {
       wallet.signTransaction(tx);
 
       var xhr = new XMLHttpRequest();
-      xhr.open('POST', wallet.url + '/transactions');
+      xhr.open('POST', "http://" + wallet.randomNode() + '/transactions');
       xhr.onload = function() {
         if (xhr.status === 200) {
           var data = JSON.parse(xhr.responseText);
