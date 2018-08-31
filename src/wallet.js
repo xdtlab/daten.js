@@ -94,6 +94,28 @@ module.exports = (function() {
     xhr.send();
   }
 
+  Wallet.prototype.resolve = function(name, onReady) {
+    this.query()
+  }
+
+  Wallet.prototype.latest = function(onReady) {
+    var xhr = new XMLHttpRequest();
+    var url = "http://" + this.randomNode() + "/latest?address=" + this.getAddress();
+    xhr.open('GET', url, true);
+    xhr.responseType = 'arraybuffer';
+    xhr.onload = function(e) {
+      if (xhr.status === 200) {
+        var responseArray = new Uint8Array(this.response);
+        if(onReady) {
+          var transactions = daten.Transaction.deserializeList(responseArray);
+          onReady(transactions);
+        }
+      } else { if(onError) onError(xhr.status); }
+    };
+    xhr.onerror = function() { if(onError) onError(xhr.status); }
+    xhr.send();
+  }
+
   Wallet.prototype.signTransaction = function(transaction) {
     var signable = transaction.serialize(false);
     transaction.signature = daten.utils.hexToBytes(daten.ecdsa.sign(this.getKey(), signable));
