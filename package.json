@@ -10,15 +10,15 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/daten-project/daten.js.git"
+    "url": "git+https://github.com/xdtlab/daten.js.git"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "bugs": {
-    "url": "https://github.com/daten-project/daten.js/issues"
+    "url": "https://github.com/xdtlab/daten.js/issues"
   },
-  "homepage": "https://github.com/daten-project/daten.js#readme",
+  "homepage": "https://github.com/xdtlab/daten.js#readme",
   "devDependencies": {
     "webpack": "^4.16.5",
     "webpack-cli": "^3.1.0"
