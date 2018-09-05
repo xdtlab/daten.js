@@ -121,26 +121,30 @@ module.exports = (function() {
     transaction.signature = daten.utils.hexToBytes(daten.ecdsa.sign(this.getKey(), signable));
   }
 
-  Wallet.prototype.sendTransaction = function(name, destination, amount, data, onResult, onError) {
+  Wallet.prototype.createTransaction = function(name, destination, amount, data, onReady, onError) {
     var wallet = this;
     this.getStatus(function(status) {
       var tx = new daten.Transaction(0, status.height + 1, 0, name, new daten.address.RawAddress(daten.utils.hexToBytes(wallet.getAddress())), destination, amount, data, new Uint8Array(71) /* Empty signature */);
       tx.fee = tx.serialize().length * status.bytePrice;
       wallet.signTransaction(tx);
+      if(onReady)
+        onReady(tx);
+    }, onError);
+  }
 
-      var xhr = new XMLHttpRequest();
-      xhr.open('POST', "http://" + wallet.randomNode() + '/transactions');
-      xhr.onload = function() {
-        if (xhr.status === 200) {
-          var data = JSON.parse(xhr.responseText);
-          if(onResult)
-            onResult(data);
-        }
-        else { if(onError) onError(xhr.status); }
-      };
-      xhr.onerror = function() { if(onError) onError(xhr.status); }
-      xhr.send(tx.serialize());
-    });
+  Wallet.prototype.sendTransaction = function(transaction, onResult, onError) {
+    var xhr = new XMLHttpRequest();
+    xhr.open('POST', "http://" + this.randomNode() + '/transactions');
+    xhr.onload = function() {
+      if (xhr.status === 200) {
+        var data = JSON.parse(xhr.responseText);
+        if(onResult)
+          onResult(data);
+      }
+      else { if(onError) onError(xhr.status); }
+    };
+    xhr.onerror = function() { if(onError) onError(xhr.status); }
+    xhr.send(transaction.serialize());
   }
 
   Wallet.prototype.query = function(filters, onQueryDone, onError) {
