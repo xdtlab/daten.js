@@ -23,15 +23,9 @@ module.exports = (function() {
     writer.writeUint32(this.target);
     writer.writeUint64(this.fee);
 
-    if(this.name) {
-      writer.writeUint8(1);
-      var encodedName = daten.utils.encodeAscii(this.name);
-      writer.writeUint8(encodedName.length);
-      writer.writeBytes(encodedName);
-    }
-    else {
-      writer.writeUint8(0);
-    }
+    var encodedName = daten.utils.encodeAscii(this.name);
+    writer.writeUint8(encodedName.length);
+    writer.writeBytes(encodedName);
 
     this.source.write(writer);
     this.destination.write(writer);
@@ -56,11 +50,7 @@ module.exports = (function() {
     var target = reader.readUint32();
     var fee = reader.readUint64();
 
-    var has_name = reader.readUint8();
-    if(has_name == 1)
-      var name = daten.utils.decodeAscii(reader.readBytes(reader.readUint8()));
-    else
-      var name = null;
+    var name = daten.utils.decodeAscii(reader.readBytes(reader.readUint8()));
 
     var source = daten.address.Address.read(reader);
     var destination = daten.address.Address.read(reader);
