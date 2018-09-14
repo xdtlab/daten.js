@@ -148,7 +148,7 @@ module.exports = (function() {
           bytesToUint8: bytesToUint8, bytesToUint16: bytesToUint16, bytesToUint32: bytesToUint32, bytesToUint64: bytesToUint64,
           uint8ToBytes: uint8ToBytes, uint16ToBytes: uint16ToBytes, uint32ToBytes: uint32ToBytes, uint64ToBytes: uint64ToBytes,
           mergeBytes: mergeBytes,
-          hexToBase58, base58ToHex,
+          hexToBase58: hexToBase58, base58ToHex: base58ToHex,
           randomName: randomName,
           ByteReader: ByteReader, ByteWriter: ByteWriter};
 })();
