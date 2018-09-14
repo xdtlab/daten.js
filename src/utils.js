@@ -15,6 +15,15 @@ module.exports = (function() {
     return decoder.decode(uint8arr);
   }
 
+  function randomName(length) {
+    if(length === undefined) length = 16;
+    var name = "";
+    var possible = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+    for (var i = 0; i < length; i++)
+      name += possible.charAt(Math.floor(Math.random() * possible.length));
+    return name;
+  }
+
   var alphabet = '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz'
   function hexToBase58(hex) {
     var num = new BigInteger("0x" + hex);
@@ -140,5 +149,6 @@ module.exports = (function() {
           uint8ToBytes: uint8ToBytes, uint16ToBytes: uint16ToBytes, uint32ToBytes: uint32ToBytes, uint64ToBytes: uint64ToBytes,
           mergeBytes: mergeBytes,
           hexToBase58, base58ToHex,
+          randomName: randomName,
           ByteReader: ByteReader, ByteWriter: ByteWriter};
 })();
