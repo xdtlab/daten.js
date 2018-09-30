@@ -18,7 +18,7 @@ module.exports = (function() {
   function randomName(length) {
     if(length === undefined) length = 16;
     var name = "";
-    var possible = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+    var possible = "abcdefghijklmnopqrstuvwxyz0123456789";
     for (var i = 0; i < length; i++)
       name += possible.charAt(Math.floor(Math.random() * possible.length));
     return name;
