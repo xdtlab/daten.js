@@ -8,3 +8,4 @@ daten.hash = require('./hash');
 daten.Transaction = require('./transaction');
 daten.utils = require('./utils');
 daten.Wallet = require('./wallet');
+daten.contrib = require('./contrib');
