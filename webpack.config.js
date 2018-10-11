@@ -3,7 +3,7 @@ const path = require('path');
 module.exports = {
   entry: './src/daten.js',
   output: {
-    filename: 'daten.js',
+    filename: 'daten.min.js',
     path: path.resolve(__dirname, 'dist'),
     library: 'daten',
     libraryTarget: 'umd',
