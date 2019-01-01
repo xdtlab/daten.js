@@ -6,6 +6,19 @@ module.exports = (function() {
   var lib = require('./crypto/bitcore-lib.min');
   var argon2 = require('./crypto/argon2');
 
+  function memoize(fn) {
+    let cache = {};
+    return function(inp) {
+      if (inp in cache)
+        return cache[inp];
+      else {
+        let result = fn(inp);
+        cache[inp] = result;
+        return result;
+      }
+    }
+  }
+
   function sha256(uint8arr) {
     return daten.utils.bytesToHex(lib.crypto.Hash.sha256(uint8arr));
   }
@@ -22,5 +35,5 @@ module.exports = (function() {
     }).hash);
   }
 
-  return {regular: sha256, pow: argon2i};
+  return {regular: memoize(sha256), pow: memoize(argon2i)};
 })();
