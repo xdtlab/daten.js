@@ -87,7 +87,7 @@ module.exports = (function() {
     xhr.open('GET', "http://" + this.randomNode() + '/blocks/' + start + '/' + end + (header_only ? "?header" : ""), true);
     xhr.responseType = 'arraybuffer';
     xhr.onload = function(e) {
-      var reader = new daten.utils.ByteReader(this.response);
+      var responseArray = new Uint8Array(this.response);
       if(onBlockRangeReady)
         onBlockRangeReady(daten.Block.deserializeList(responseArray, header_only));
     };
@@ -200,20 +200,6 @@ module.exports = (function() {
   Wallet.prototype.confirm = function(transaction, maxConfirmations, onResult, onError) {
     var wallet = this;
 
-    function checkDiffs(index, previousHash, confirmations, tries, maxConfirmations) {
-      if(maxConfirmations > confirmations) {
-        wallet.getBlock(index, true, function(b) {
-          if(daten.utils.bytesToHex(b.previousHash) == previousHash) {
-            var hash = b.hash();
-            if(b.validDifficulty(hash))
-              checkDiffs(b.index + 1, hash, confirmations + 1, tries + b.averageTriesNeeded(), maxConfirmations);
-            else onResult(confirmations, tries);
-          } else onResult(confirmations, tries);
-        },
-        function() { onResult(confirmations, tries); });
-      } else onResult(confirmations, tries);
-    }
-
     var xhr = new XMLHttpRequest();
     xhr.open('GET', "http://" + this.randomNode() + "/confirm?target=" + transaction.target + "&hash=" + transaction.hash());
     xhr.onload = function() {
@@ -222,17 +208,19 @@ module.exports = (function() {
         if(!data.ok)
           onResult(0, 0);
         else {
-          wallet.getStatus(function(status) {
-            if(maxConfirmations > status.height - transaction.target)
-              maxConfirmations = status.height - transaction.target;
-            wallet.getBlock(transaction.target, true, function(b) {
-              if(Wallet.runMerklePath(transaction.hash(), data.path) == daten.utils.bytesToHex(b.merkleRoot)) {
-                var hash = b.hash();
-                if(b.validDifficulty(hash))
-                  checkDiffs(transaction.target + 1, hash, 1, b.averageTriesNeeded(), maxConfirmations);
-                else onResult(0, 0);
+          wallet.getBlockRange(transaction.target, transaction.target + maxConfirmations, true, function(blks) {
+            if(Wallet.runMerklePath(transaction.hash(), data.path) == daten.utils.bytesToHex(blks[0].merkleRoot)) {
+              var totalTries = 0;
+              for(var i = 0; i < blks.length; i++) {
+                var hash = blks[i].hash();
+                if((i > 0 && daten.utils.bytesToHex(blks[i].previousHash) != blks[i-1].hash()) || !blks[i].validDifficulty(hash)) {
+                  onResult(i, totalTries);
+                  return;
+                }
+                totalTries += blks[i].averageTriesNeeded();
               }
-            });
+              onResult(blks.length, totalTries);
+            } else onResult(0, 0);
           });
         }
       }
