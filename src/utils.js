@@ -47,7 +47,9 @@ module.exports = (function() {
       decoded = decoded.add(toadd);
       base58 = base58.substring(1);
     }
-    return decoded.toString(16);
+    var hex = decoded.toString(16);
+    if(hex.length % 2 != 0) hex = "0" + hex;
+    return hex;
   }
 
   function encodeAscii(string) {
