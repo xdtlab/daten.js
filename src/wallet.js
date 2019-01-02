@@ -124,7 +124,7 @@ module.exports = (function() {
   Wallet.prototype.createTransaction = function(name, destination, amount, data, onReady, onError) {
     var wallet = this;
     this.getStatus(function(status) {
-      var tx = new daten.Transaction(0, status.height + 1, 0, name, new daten.address.RawAddress(daten.utils.hexToBytes(wallet.getAddress())), destination, amount, data, new Uint8Array(71) /* Empty signature */);
+      var tx = new daten.Transaction(0, status.height + 1, 0, name, wallet.getAddress(), destination, amount, data, new Uint8Array(71) /* Empty signature */);
       tx.fee = tx.serialize().length * status.bytePrice;
       wallet.signTransaction(tx);
       if(onReady)
