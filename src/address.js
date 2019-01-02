@@ -8,9 +8,16 @@ module.exports = (function() {
   Address.prototype.write = function(writer) { writer.writeUint8(this.constructor.TYPE_ID); }
   Address.prototype.hash = function() { var writer = new daten.utils.ByteWriter(); this.write(writer); return daten.hash.regular(writer.getValue()); }
   Address.read = function(reader) { return this.ADDRESS_TYPES[reader.readUint8()].read(reader);}
-  Address.fromString = function(string) { if(string.length == 66) return new RawAddress(daten.utils.hexToBytes(string)); else return new NameAddress(string.split(".")); }
+  Address.fromString = function(string) {
+    if(string[0] == '@') return new NameAddress(string.substr(1).split("."));
+    else return new RawAddress(daten.utils.hexToBytes(daten.utils.base58ToHex(string)));
+  }
 
-  function RawAddress(publicKey) { this.publicKey = publicKey; }
+  function RawAddress(publicKey) {
+    if(!(publicKey instanceof Uint8Array) || publicKey.length != 33)
+      throw "Invalid public key!";
+    this.publicKey = publicKey;
+  }
   RawAddress.TYPE_ID = 0;
   RawAddress.prototype = Object.create(Address.prototype, {
     write: { value: function(writer) {
@@ -18,7 +25,7 @@ module.exports = (function() {
       writer.writeBytes(this.publicKey);
     }},
     toString: { value: function() {
-      return daten.utils.bytesToHex(this.publicKey);
+      return daten.utils.hexToBase58(daten.utils.bytesToHex(this.publicKey));
     }},
     getName: { value: function() {
       return null;
@@ -32,7 +39,13 @@ module.exports = (function() {
   RawAddress.prototype.constructor = RawAddress;
   Address.ADDRESS_TYPES[RawAddress.TYPE_ID] = RawAddress;
 
-  function NameAddress(name) { this.name = name; }
+  function NameAddress(name) {
+    for(var i = 0; i < name.length; i++) {
+      if(!(/^[a-z0-9-]{1,16}$/.test(name[i])))
+        throw "Invalid name!";
+    }
+    this.name = name;
+  }
   NameAddress.TYPE_ID = 1;
   NameAddress.prototype = Object.create(Address.prototype, {
     write: { value: function(writer) {
@@ -45,7 +58,7 @@ module.exports = (function() {
       }
     }},
     toString: { value: function() {
-      return this.name.join(".");
+      return '@' + this.name.join(".");
     }},
     getName: { value: function() {
       return this.name[0];
