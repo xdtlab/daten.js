@@ -9,7 +9,7 @@ module.exports = (function() {
     else
       var acc = daten.ecdsa.generate();
     this.key = acc.key;
-    this.address = acc.address;
+    this.address = new daten.address.RawAddress(daten.utils.hexToBytes(acc.address));
     this.nodes = new Set();
     this.nodes.add(node);
   }
