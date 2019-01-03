@@ -147,19 +147,35 @@ module.exports = (function() {
     xhr.send(transaction.serialize());
   }
 
-  Wallet.prototype.query = function(filters, onQueryDone, onError) {
+  Wallet.prototype.find = function(name, onFound, onError) {
     var xhr = new XMLHttpRequest();
-    var url = "http://" + this.randomNode() + "/query?";
-    if(filters.name) url += 'name=' + filters.name + '&';
-    if(filters.destination) url += 'destination=' + filters.destination.toString();
+    var url = "http://" + this.randomNode() + "/find?name=" + name;
     xhr.open('GET', url, true);
     xhr.responseType = 'arraybuffer';
     xhr.onload = function(e) {
       if (xhr.status === 200) {
         var responseArray = new Uint8Array(this.response);
-        if(onQueryDone) {
-          var transactions = daten.Transaction.deserializeList(responseArray);
-          onQueryDone(transactions);
+        if(onFound) {
+          var tx = daten.Transaction.deserialize(responseArray);
+          onFound(tx);
+        }
+      } else { if(onError) onError(xhr.status); }
+    };
+    xhr.onerror = function() { if(onError) onError(xhr.status); }
+    xhr.send();
+  }
+
+  Wallet.prototype.findChildren = function(name, onFound, onError) {
+    var xhr = new XMLHttpRequest();
+    var url = "http://" + this.randomNode() + "/find?name=" + name + "&children";
+    xhr.open('GET', url, true);
+    xhr.responseType = 'arraybuffer';
+    xhr.onload = function(e) {
+      if (xhr.status === 200) {
+        var responseArray = new Uint8Array(this.response);
+        if(onFound) {
+          var tx = daten.Transaction.deserializeList(responseArray);
+          onFound(tx);
         }
       } else { if(onError) onError(xhr.status); }
     };
